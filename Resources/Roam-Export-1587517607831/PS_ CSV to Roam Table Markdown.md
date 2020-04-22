@@ -1,0 +1,47 @@
+- [[Programming]] Language:: #PowerShell
+- Filename:: blah blah blah.ps1
+- version:: 1.0
+- Goal
+    - Take a #CSV file and #Export it into a new file in #Markdown #Format to #Import into #Roam. Also should be able to just copy from the file and paste right into #Roam without #Import.
+- Sample work
+    - ljsdf
+        - {{[[query]]: {and: [[TODO]] #Someday-Maybe {not: [[query]]}}}}
+    - Locations
+        - Manually Entered to copy CSV
+            - {{table}}
+                - Street
+                    - City
+                        - State
+                            - Zip
+                                - Country
+                - 123
+                    - Seattle
+                        - WA
+                            - 98020
+                                - United States
+                - 456
+                    - Portland
+                        - OR
+                            - 
+                                - United States
+                - 789
+                    - Seattle
+                        - WA
+                            - 98501
+                                - United States
+                - 1011
+                    - London
+                        - 
+                            - 
+                                - England
+                - 1213
+                    - Dallas
+                        - TX
+                            - 56013
+                                - United States
+                - 1456
+                    - San Diego
+                        - CA
+                            - 90210
+                                - United States
+        - Testing the script results
