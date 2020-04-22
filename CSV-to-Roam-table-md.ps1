@@ -1,5 +1,6 @@
-#v0.2.0
+#v0.2.1
 #Version Comments: First working version to be tested
+#Repository: https://bitbucket.org/murf/csv-to-roam-table-md
 #Code written by:       Murf
 #Design/Concept by:     Rob Haisfield @RobertHaisfield on Twitter
 
