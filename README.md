@@ -1,45 +1,37 @@
-**Edit a file, create a new file, and clone from Bitbucket in under 2 minutes**
+**Converting CSV files to Markdown for Roam Tables**
 
-When you're done, you can delete the content in this README and update the file with details for others getting started with your repository.
+Very early stages. Script is working great but non-windows folks have to figure out how to run PowerShell on their computer.
 
-*We recommend that you open this README in another tab as you perform the tasks below. You can [watch our video](https://youtu.be/0ocf7u76WSo) for a full demo of all the steps in this tutorial. Open the video in a new tab to avoid leaving Bitbucket.*
-
----
-
-## Edit a file
-
-You’ll start by editing this README file to learn how to edit a file in Bitbucket.
-
-1. Click **Source** on the left side.
-2. Click the README.md link from the list of files.
-3. Click the **Edit** button.
-4. Delete the following text: *Delete this line to make a change to the README from Bitbucket.*
-5. After making your change, click **Commit** and then **Commit** again in the dialog. The commit page will open and you’ll see the change you just made.
-6. Go back to the **Source** page.
+*Rob Haisfield is on a MAC and said he found a source for running PowerShell. Will wait and see when he tests it, but hopefully he can explain how it can be done.*
 
 ---
 
-## Create a file
+## Brief Video Demo
 
-Next, you’ll add a new file to this repository.
-
-1. Click the **New file** button at the top of the **Source** page.
-2. Give the file a filename of **contributors.txt**.
-3. Enter your name in the empty file space.
-4. Click **Commit** and then **Commit** again in the dialog.
-5. Go back to the **Source** page.
-
-Before you move on, go ahead and explore the repository. You've already seen the **Source** page, but check out the **Commits**, **Branches**, and **Settings** pages.
+https://www.screencast.com/t/ak2DEaml2HYK
 
 ---
 
-## Clone a repository
+## How to Download the Script
 
-Use these steps to clone from SourceTree, our client for using the repository command-line free. Cloning allows you to work on your files locally. If you don't yet have SourceTree, [download and install first](https://www.sourcetreeapp.com/). If you prefer to clone from the command line, see [Clone a repository](https://confluence.atlassian.com/x/4whODQ).
+I know everyone is used to GitHub, but the nice thing about Bitbucket is you do NOT have to signup for an account to access a Public repository like mine.
 
-1. You’ll see the clone button under the **Source** heading. Click that button.
-2. Now click **Check out in SourceTree**. You may need to create a SourceTree account or log in.
-3. When you see the **Clone New** dialog in SourceTree, update the destination path and name if you’d like to and then click **Clone**.
-4. Open the directory you just created to see your repository’s files.
+1. Go to [Downloads tab](https://bitbucket.org/murf/csv-to-roam-table-md/downloads/)
+2. Click **Download repository**
+3. Save the .zip package on your computer.
+4. Unzip the package.
 
-Now that you're more familiar with your Bitbucket repository, go ahead and add a new file locally. You can [push your change back to Bitbucket with SourceTree](https://confluence.atlassian.com/x/iqyBMg), or you can [add, commit,](https://confluence.atlassian.com/x/8QhODQ) and [push from the command line](https://confluence.atlassian.com/x/NQ0zDQ).
+---
+
+## How to Run the Script
+
+This is a brand new script and I haven't spent much time on it but wanted to get it out. The ReadMe is lacking as well but I plan to spend some time later this week. Watch the Demo Video linked above which shows the script in action.
+
+1. Move the CSV-to-Roam-table-md.ps1 PowerShell script into the same folder as whatever .CSV file you are trying to convert.
+2. Right-click the script and select **Run with PowerShell**.
+3. Press ENTER if you are converting a file with the Default "," (comma) separated values.
+4. Press ENTER again at the next prompt if you want to use the Default path which is set to whatever folder you are running the script from.
+5. Enter the name of the file... do **NOT** include the path (For Example: locations.csv)
+6. Open the resulting .md file and simply copy the entire file contents and then paste into any block in Roam and it should auto format/create the table.
+
+A lot more to come!
