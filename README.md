@@ -1,4 +1,4 @@
-#Converting CSV files to Markdown for Roam Tables
+# Converting CSV files to Markdown for Roam Tables
 
 Very early stages. Script is working great but non-windows folks have to figure out how to run PowerShell on their computer.
 
