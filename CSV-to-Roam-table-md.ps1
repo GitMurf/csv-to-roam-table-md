@@ -1,6 +1,16 @@
-#v0.1.0
-#Code written by:   Murf
-#Design by:         Rob Haisfield @RobertHaisfield on Twitter
+#v0.2.0
+#Version Comments: First working version to be tested
+#Code written by:       Murf
+#Design/Concept by:     Rob Haisfield @RobertHaisfield on Twitter
+
+#Set the indent type. In Roam a single space at beginning of a line works just like a TAB.
+#Can use either way to bring into Roam, just your preference. Default we will keep simple and just use Spaces " ".
+#If you want to use tab, use $indentType = "`t"
+$indentType = " "
+
+#Bullet type. Leave blank if don't need to show a character for bullets which Roam does NOT need to import into table format
+#Can use for example "*" or "-"
+$bulletType = "-"
 
 #Set the delimiter variable (default is "," comma)
 $strDelim = ","
@@ -54,14 +64,56 @@ $newMarkdownFile = "$scriptPath\" + "$fileNameStr" + "_$dateStrName.md"
 #Import .CSV file into a Variable to loop through and parse
 $csvObject = Import-Csv -Delimiter $strDelim -Path "$fileNameStrPath"
 
+#Collapse the entire table under a parent bullet with name of the CSV file
+$tableCell = "TABLE IMPORT FROM CSV: " + $fileNameStr
+$tableCell = $bulletType + $tableCell
+Add-content $newMarkdownFile -value $tableCell
+
+#Add {{table}}
+$tableCell = "{{table}}"
+$tableCell = $bulletType + $tableCell
+$tableCell = $indentType + $tableCell
+Add-content $newMarkdownFile -value $tableCell
+
+#Start by adding the table header to the markdown results file
+$ctr = 2
+foreach($col in $csvObject[0].psobject.properties.name)
+{
+    $tableCell = $col
+    $tableCell = $bulletType + $tableCell
+    #Add the proper indentation based on looping through x number of times based on $ctr
+    $tmpCtr = $ctr
+    while($tmpCtr -gt 0)
+    {
+        $tableCell = $indentType + $tableCell
+        $tmpCtr = $tmpCtr - 1
+    }
+
+    Add-content $newMarkdownFile -value $tableCell
+    $ctr = $ctr + 1
+}
+
 #Loop through each row of the csv file
 foreach($row in $csvObject)
 {
+    #Set a counter which will decide how spacing is done for indents in the Roam table structure
+    #Start at 2 instead of 0 to account for CSV file name parent bullet and then {{table}} being second indent level, and everything needing to start indented under it
+    $ctr = 2
     #For each row of csv file, loop through each column
     foreach($col in $row.psobject.properties.name)
     {
         $tableCell = $row.$col
+        $tableCell = $bulletType + $tableCell
+        #Add the proper indentation based on looping through x number of times based on $ctr
+        $tmpCtr = $ctr
+        while($tmpCtr -gt 0)
+        {
+            $tableCell = $indentType + $tableCell
+            $tmpCtr = $tmpCtr - 1
+        }
+
         Add-content $newMarkdownFile -value $tableCell
+        $ctr = $ctr + 1
     }
 }
 
