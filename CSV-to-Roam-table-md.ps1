@@ -1,8 +1,11 @@
-#v0.2.2
-#Version Comments: Created a summary page for the CSV Import/Conversion
+#v0.3.0
+#Version Comments: Ready for first testing
 #Repository: https://github.com/GitMurf/csv-to-roam-table-md
 #Code written by:       Murf
 #Design/Concept by:     Rob Haisfield @RobertHaisfield on Twitter
+
+#If $bTesting = $true then add "TESTING_ to the front of any page created
+$bTesting = $true
 
 #Set the indent type. In Roam a single space at beginning of a line works just like a TAB.
 #Can use either way to bring into Roam, just your preference. Default we will keep simple and just use Spaces " ".
@@ -26,8 +29,8 @@ Function Write-Roam-File
     )
 
     Add-content -LiteralPath $filePath -value $strToWrite
-    $logInfo = "Added '$strToWrite' to the File: '$filePath'"
-    Write-Roam-Log $logInfo $indentCtr
+    $logInfo = "Added '$strToWrite' to the File '$filePath'"
+    if($indentCtr -ne 999){Write-Roam-Log $logInfo $indentCtr} #Skip writing to log if set to 999
 }
 
 #This function writes to log file and echos on screen if "show" parameter is present
@@ -39,6 +42,9 @@ Function Write-Roam-Log
         [string]$show = "Hide"
     )
 
+    $logstring = $logstring -Replace "\:","_" -Replace "\[","_" -Replace "\]","_"
+    $logstring = $bulletType + $logstring
+
     #If passed the show parameter then write to the powershell window
     if($show.ToLower() -eq "show"){Write-Host($logstring); Write-Host;}
 
@@ -46,11 +52,11 @@ Function Write-Roam-Log
     #Loop through the count of $indentCtr to add that many tabs before the entry
     while($indentCtr -gt 0)
     {
-        $logstring = "`t" + $logstring
+        $logstring = $indentType + $logstring
         $indentCtr = $indentCtr - 1
     }
 
-    if($logstring){$logstring = ("[" + (Get-Date) + "] $logstring")}
+    #if($logstring){$logstring = ("[" + (Get-Date) + "] $logstring")}
     Add-content -LiteralPath $tempLogFile -value $logstring
 }
 
@@ -113,6 +119,7 @@ $resultsFolder = "$scriptPath\Results"
 $fullDateStr = get-date
 $dateStrName = $fullDateStr.ToString("yyyy_MM_dd-HH_mm_ss")
 $csvFileName = "$fileNameStr" + "_$dateStrName"
+if($bTesting){$csvFileName = "TESTING_" + $csvFileName}
 $newMarkdownFile = "$resultsFolder\" + "$csvFileName" + ".md"
 $tempLogFile = "$resultsFolder\" + "roamCsvLog" + "_$dateStrName" + ".log"
 
@@ -122,7 +129,8 @@ $csvObject = Import-Csv -Delimiter $strDelim -Path "$fileNameStrPath"
 #If $bPages -eq $true, then create the csv-import page name to store all the info about this import and the pages it creates (summary and log)
 if($bPages)
 {
-    $csvImportName = "[[csv-import]] - " + $csvFileName
+    $csvImportName = "[[csv-import]] " + $csvFileName
+    if($bTesting){$csvImportName = "TESTING_" + $csvImportName}
     $csvImportNamePath = "$resultsFolder\" + "$csvImportName" + ".md"
     #Create Results folder if it doesn't already exist
     if(!(Test-Path $resultsFolder)){New-Item -ItemType Directory -Force -Path $resultsFolder | Out-Null}
@@ -173,11 +181,11 @@ $tableCell = $indentType + $tableCell
 Write-Roam-File $newMarkdownFile $tableCell 2
 
 #Start by adding the table header to the markdown results file
-Write-Roam-Log "Adding table headers to $csvFileName" 2 "Show"
+Write-Roam-Log "Adding table headers to $csvFileName" 3 "Show"
 if($bPages)
 {
-    Write-Roam-File $csvImportNamePath ($bulletType + "SUMMARY") #Creating "SUMMARY" parent bullet, to add links to all the pages created beneath it
-    Write-Roam-File $csvImportNamePath ($indentType + $bulletType + "ATTRIBUTES") #Will create links to each attribute created under this bullet
+    Write-Roam-File $csvImportNamePath ($bulletType + "SUMMARY") 0 #Creating "SUMMARY" parent bullet, to add links to all the pages created beneath it
+    Write-Roam-File $csvImportNamePath ($indentType + $bulletType + "ATTRIBUTES") 1 #Will create links to each attribute created under this bullet
 }
 $ctr = 2
 foreach($col in $csvObject[0].psobject.properties.name)
@@ -192,15 +200,20 @@ foreach($col in $csvObject[0].psobject.properties.name)
         $tmpCtr = $tmpCtr - 1
     }
 
-    Write-Roam-File $newMarkdownFile $tableCell 3
+    Write-Roam-File $newMarkdownFile $tableCell 999
     $ctr = $ctr + 1
     
     #If creating new pages for each CSV row, then need to add attributes to the summary page
-    if($bPages){Write-Roam-File $csvImportNamePath ($indentType + $indentType + $bulletType + "[[" + $col + "]]")}
+    if($bPages)
+    {
+        if($bTesting){$col = "TESTING_" + $col}
+        Write-Roam-File $csvImportNamePath ($indentType + $indentType + $bulletType + "[[" + $col + "]]") 2
+    }
 }
 
 #Create new page/file for each CSV row
-if($bPages){Write-Roam-File $csvImportNamePath ($indentType + $bulletType + "CSV ROW PAGES")} #Will create links to each page created under this bullet}
+Write-Roam-Log "Creating new Pages for each CSV row" 0 "Show"
+if($bPages){Write-Roam-File $csvImportNamePath ($indentType + $bulletType + "CSV ROW PAGES") 999} #Will create links to each page created under this bullet}
 
 #Loop through each row of the csv file
 foreach($row in $csvObject)
@@ -210,8 +223,18 @@ foreach($row in $csvObject)
     {
         $colHeaderNames = $row.psobject.properties.name
         $rowPageName = $row.($colHeaderNames[0])
+        if($bTesting){$rowPageName = "TESTING_" + $rowPageName}
         Write-Roam-File $csvImportNamePath ($indentType + $indentType + $bulletType + "[[" + $rowPageName + "]]")
         $rowPageNamePath = "$resultsFolder\" + "$rowPageName" + ".md"
+
+        #Commenting out the CSV import attribute data becuase isn't needed on each page... instead link to the csv summary page which has all that info
+        Write-Roam-File $rowPageNamePath ("csv-import:: [[" + $csvImportName + "]]") 2
+
+        #General attributes for the CSV import. These are in the Summary page for the import so do we need them also on every page?
+        #Write-Roam-File $rowPageNamePath ("csv-date:: " + $roamDate)
+        #Write-Roam-File $rowPageNamePath ("csv-time:: " + $strTime)
+        #Write-Roam-File $rowPageNamePath ("csv-filename:: " + $fileNameStr)
+        #Write-Roam-File $rowPageNamePath ("csv-type:: " + $csvType)
     }
     #Set a counter which will decide how spacing is done for indents in the Roam table structure
     #Start at 2 instead of 0 to account for CSV file name parent bullet and then {{table}} being second indent level, and everything needing to start indented under it
@@ -230,23 +253,42 @@ foreach($row in $csvObject)
             $tmpCtr = $tmpCtr - 1
         }
 
-        Add-content -LiteralPath $newMarkdownFile -value $tableCell
+        Write-Roam-File $newMarkdownFile $tableCell 999
         $ctr = $ctr + 1
         
         #Add attribute for the new page (row)
+        if($bTesting){$col = "TESTING_" + $col}
         if($bPages){Write-Roam-File $rowPageNamePath ($col + ":: " + $tableCellOrig)}
     }
 }
 
+Write-Roam-Log "Merge the Roam table markdown format into $csvImportName" 0 "Show"
+Write-Roam-Log "Merge the Logs from this CSV conversion/import into $csvImportName" 0 "Show"
+Write-Roam-Log "Delete the temporary files you created for script processing" 0 "Show"
+
+#Add the Roam table markdown format code
+$tableFileItems = Get-Content -LiteralPath $newMarkdownFile -ReadCount 0
+
+Foreach($tableRow in $tableFileItems)
+{
+    Write-Roam-File $csvImportNamePath $tableRow 999
+}
+
 #Add the temp log file to the csv-import summary page under a parent bullet named "LOGS"
+Write-Roam-File $csvImportNamePath ($bulletType + "LOGS") 999 #Creating "LOGS" parent bullet to have all logs nested under it
+$logFileItems = Get-Content -LiteralPath $tempLogFile -ReadCount 0
+
+Foreach($logRow in $logFileItems)
+{
+    Write-Roam-File $csvImportNamePath ($indentType + $logRow) 999
+}
 
 #Delete the temp log file
-#Remove-Item -LiteralPath $tempLogFile
+Remove-Item -LiteralPath $tempLogFile
+
+#Delete the temp Roam table format file
+Remove-Item -LiteralPath $newMarkdownFile
 
 #Exit the script
-Read-Host -Prompt "Script complete. Press any key to exit."
-Exit
-
-#TESTING... Exit the script
 Read-Host -Prompt "Script complete. Press any key to exit."
 Exit
