@@ -23,9 +23,14 @@ Write-Host
 $respPages = Read-Host "Do you want to create a Page for each Row in the CSV file? (Enter y or n)"
 
 #Check if user decided to create new pages (e.g., a CRM import)
-if($respPages -eq "y" -or $respPages -eq "Y" -or $respPages -eq "yes" -or $respPages -eq "Yes"){$bPages = $true}else{$bPages = $false}
+if($respPages -eq "y" -or $respPages -eq "Y" -or $respPages -eq "yes" -or $respPages -eq "Yes")
+{
+    $bPages = $true
+    Write-Host
+    #Ask user for the type of csv import (e.g., People, Company, CRM etc.)
+    $csvType = Read-Host "Enter CSV Type (e.g., Contacts, Tools, Company). Will use as Attribute (csv-type:: Contacts)"
+}else{$bPages = $false}
 
-#Add a blank line for easier reading of prompts in powershell window
 Write-Host
 
 #Ask for user input. If left blank and user presses ENTER, then continue with default (comma). Otherwise they can enter their own option.
@@ -73,15 +78,39 @@ $dateStrName = $fullDateStr.ToString("yyyy_MM_dd-HH_mm_ss")
 $csvFileName = "$fileNameStr" + "_$dateStrName"
 $newMarkdownFile = "$resultsFolder\" + "csvFileName" + ".md"
 
-#If $bPages -eq $true, then create the csv-import page name to store all the info about this import and the pages it creates
+#If $bPages -eq $true, then create the csv-import page name to store all the info about this import and the pages it creates (summary and log)
 if($bPages)
 {
     $csvImportName = "[[csv-import]] - " + $csvFileName
     $csvImportNamePath = "$resultsFolder\" + "$csvImportName" + ".md"
     #Create Results folder if it doesn't already exist
     if(!(Test-Path $resultsFolder)){New-Item -ItemType Directory -Force -Path $resultsFolder | Out-Null}
+
+    #Get current date and put into Roam format
+    $roamMonth = $fullDateStr.ToString("MMMM") #April, August, January
+    $roamDay1 = $fullDateStr.ToString("%d") #1, 13, 28
+    $roamYear = $fullDateStr.ToString("yyyy") #2020
+
+    #Find the "day" suffix for Roam format (i.e., Xst, Xnd, Xrd, Xth)
+    $roamDay2 = switch($roamDay1)
+    {
+        {$_ -in 1,21,31} {$roamDay1 + 'st'; break}
+        {$_ -in 2,22} {$roamDay1 + 'nd'; break}
+        {$_ -in 3,23} {$roamDay1 + 'rd'; break}
+        Default {$roamDay1 + 'th'; break}
+    }
+    $roamDate = "[[" + "$roamMonth $roamDay2, $roamYear" + "]]" #[[April 26th, 2020]]
+    #Time string
+    $strTime = $fullDateStr.ToString("HH:mm") #17:43, 05:21
+
     #Write attribute for csv-import to first line of this new .md file (need to use LiteralPath parameter because of [[]] characters in path)
-    Add-content -LiteralPath $csvImportNamePath -value ("csv-import:: " + "[[April 25th, 2020]]")
+    Add-content -LiteralPath $csvImportNamePath -value ("csv-date:: " + $roamDate)
+    #Import time attribute
+    Add-content -LiteralPath $csvImportNamePath -value ("csv-time:: " + $strTime)
+    #Filename attribute
+    Add-content -LiteralPath $csvImportNamePath -value ("csv-filename:: " + $fileNameStr)
+    #Type of CSV file attribute (example could be: People, CRM, Company)
+    Add-content -LiteralPath $csvImportNamePath -value ("csv-type:: " + $csvType)
 }
 Read-Host -Prompt "Script complete. Press any key to exit."
 Exit
