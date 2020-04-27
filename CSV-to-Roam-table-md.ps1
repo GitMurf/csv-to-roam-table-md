@@ -61,13 +61,12 @@ Write-Host
 $respPages = Read-Host "Do you want to create a Page for each Row in the CSV file? (Enter y or n)"
 
 #Check if user decided to create new pages (e.g., a CRM import)
-if($respPages -eq "y" -or $respPages -eq "Y" -or $respPages -eq "yes" -or $respPages -eq "Yes")
-{
-    $bPages = $true
-    Write-Host
-    #Ask user for the type of csv import (e.g., People, Company, CRM etc.)
-    $csvType = Read-Host "Enter CSV Type (e.g., Contacts, Tools, Company). Will use in csv-type:: Attribute"
-}else{$bPages = $false}
+if($respPages -eq "y" -or $respPages -eq "Y" -or $respPages -eq "yes" -or $respPages -eq "Yes"){$bPages = $true}else{$bPages = $false}
+
+Write-Host
+
+#Ask user for the type of csv import (e.g., People, Company, CRM etc.)
+$csvType = Read-Host "Enter CSV Type (e.g., Contacts, Tools, Locations). Will use in csv-type:: Attribute"
 
 Write-Host
 
@@ -164,7 +163,7 @@ if($bPages)
 #Collapse the entire table under a parent bullet with name of the CSV file
 $tableCell = "TABLE IMPORT FROM CSV: " + $fileNameStr
 $tableCell = $bulletType + $tableCell
-Write-Roam-Log ("Created the .MD markdown file '" + "$csvFileName" + ".md' which will convert the CSV file into Roam table markdown format.") 0 "Show"
+Write-Roam-Log ("Converting the CSV into the Roam table markdown format.") 0 "Show"
 Write-Roam-File $newMarkdownFile $tableCell
 
 #Add {{table}}
@@ -175,6 +174,8 @@ Write-Roam-File $newMarkdownFile $tableCell 2
 
 #Start by adding the table header to the markdown results file
 Write-Roam-Log "Adding table headers to $csvFileName" 2 "Show"
+Write-Roam-File $csvImportNamePath ($bulletType + "SUMMARY") #Creating "SUMMARY" parent bullet, to add links to all the pages created beneath it
+Write-Roam-File $csvImportNamePath ($indentType + $bulletType + "ATTRIBUTES") #Will create links to each attribute created under this bullet
 $ctr = 2
 foreach($col in $csvObject[0].psobject.properties.name)
 {
@@ -190,6 +191,12 @@ foreach($col in $csvObject[0].psobject.properties.name)
 
     Write-Roam-File $newMarkdownFile $tableCell 3
     $ctr = $ctr + 1
+    
+    #If creating new pages for each CSV row, then need to add attributes to the summary page
+    if($bPages)
+    {
+        Write-Roam-File $csvImportNamePath ($indentType + $indentType + $bulletType + "[[" + $col + "]]")
+    }
 }
 
 #TESTING... Exit the script
@@ -219,6 +226,11 @@ foreach($row in $csvObject)
         $ctr = $ctr + 1
     }
 }
+
+
+#Write-Roam-File $csvImportNamePath ("SUMMARY") #Creating "SUMMARY" parent bullet, to add links to all the pages created beneath it
+#Write-Roam-File $csvImportNamePath ($indentType + "[[" + $csvFileName + "]]")
+
 
 #Delete the temp log file
 Remove-Item -LiteralPath $tempLogFile
