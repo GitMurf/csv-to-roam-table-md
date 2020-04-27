@@ -21,12 +21,13 @@ Function Write-Roam-File
 {
     Param(
         [string]$filePath,
-        [string]$strToWrite = ""
+        [string]$strToWrite = "",
+        [int]$indentCtr = 1
     )
 
     Add-content -LiteralPath $filePath -value $strToWrite
     $logInfo = "Added '$strToWrite' to the File: '$filePath'"
-    Write-Roam-Log $logInfo
+    Write-Roam-Log $logInfo $indentCtr
 }
 
 #This function writes to log file and echos on screen if "show" parameter is present
@@ -34,11 +35,21 @@ Function Write-Roam-Log
 {
     Param(
         [string]$logstring,
+        [int]$indentCtr = 0,
         [string]$show = "Hide"
     )
 
     #If passed the show parameter then write to the powershell window
-    if($show.ToLower() -eq "show"){Write-Host($logstring)}
+    if($show.ToLower() -eq "show"){Write-Host($logstring); Write-Host;}
+
+    #Indent the logs for easier grouping/viewing and breaking into sections
+    #Loop through the count of $indentCtr to add that many tabs before the entry
+    while($indentCtr -gt 0)
+    {
+        $logstring = "`t" + $logstring
+        $indentCtr = $indentCtr - 1
+    }
+
     if($logstring){$logstring = ("[" + (Get-Date) + "] $logstring")}
     Add-content -LiteralPath $tempLogFile -value $logstring
 }
@@ -134,8 +145,8 @@ if($bPages)
     #Time string
     $strTime = $fullDateStr.ToString("HH:mm") #17:43, 05:21
     
-    Write-Roam-Log "Created the .MD markdown file '$csvImportName' that will Summarize the CSV Conversion activities and store a Log of all actions."
-    Write-Roam-Log "Converted today's date to Roam format: $roamDate"
+    Write-Roam-Log "Created the .MD markdown file '$csvImportName' that will Summarize the CSV Conversion activities and store a Log of all actions." 0 "Show"
+    Write-Roam-Log "Converted today's date to Roam format: $roamDate" 1
 
     #Write attribute for csv-import to first line of this new .md file (need to use LiteralPath parameter because of [[]] characters in path)
     Write-Roam-File $csvImportNamePath ("csv-date:: " + $roamDate)
@@ -145,26 +156,25 @@ if($bPages)
     Write-Roam-File $csvImportNamePath ("csv-filename:: " + $fileNameStr)
     #Type of CSV file attribute (example could be: People, CRM, Company)
     Write-Roam-File $csvImportNamePath ("csv-type:: " + $csvType)
-    
-    Write-Roam-Log "Finished adding primary Attributes to the CSV Conversion Summary page: '$csvImportName'"
+
+    Write-Roam-Log "Finished adding primary Attributes to the CSV Conversion Summary page: '$csvImportName'" 0 "Show"
 }
 
-#TESTING... Exit the script
-Read-Host -Prompt "Script complete. Press any key to exit."
-Exit
-
+#Creation of the CSV into Roam table format
 #Collapse the entire table under a parent bullet with name of the CSV file
 $tableCell = "TABLE IMPORT FROM CSV: " + $fileNameStr
 $tableCell = $bulletType + $tableCell
-Add-content -LiteralPath $newMarkdownFile -value $tableCell
+Write-Roam-Log ("Created the .MD markdown file '" + "$csvFileName" + ".md' which will convert the CSV file into Roam table markdown format.") 0 "Show"
+Write-Roam-File $newMarkdownFile $tableCell
 
 #Add {{table}}
 $tableCell = "{{table}}"
 $tableCell = $bulletType + $tableCell
 $tableCell = $indentType + $tableCell
-Add-content -LiteralPath $newMarkdownFile -value $tableCell
+Write-Roam-File $newMarkdownFile $tableCell 2
 
 #Start by adding the table header to the markdown results file
+Write-Roam-Log "Adding table headers to $csvFileName" 2 "Show"
 $ctr = 2
 foreach($col in $csvObject[0].psobject.properties.name)
 {
@@ -178,9 +188,13 @@ foreach($col in $csvObject[0].psobject.properties.name)
         $tmpCtr = $tmpCtr - 1
     }
 
-    Add-content -LiteralPath $newMarkdownFile -value $tableCell
+    Write-Roam-File $newMarkdownFile $tableCell 3
     $ctr = $ctr + 1
 }
+
+#TESTING... Exit the script
+Read-Host -Prompt "Script complete. Press any key to exit."
+Exit
 
 #Loop through each row of the csv file
 foreach($row in $csvObject)
@@ -205,6 +219,9 @@ foreach($row in $csvObject)
         $ctr = $ctr + 1
     }
 }
+
+#Delete the temp log file
+Remove-Item -LiteralPath $tempLogFile
 
 #Exit the script
 Read-Host -Prompt "Script complete. Press any key to exit."
