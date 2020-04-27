@@ -174,8 +174,11 @@ Write-Roam-File $newMarkdownFile $tableCell 2
 
 #Start by adding the table header to the markdown results file
 Write-Roam-Log "Adding table headers to $csvFileName" 2 "Show"
-Write-Roam-File $csvImportNamePath ($bulletType + "SUMMARY") #Creating "SUMMARY" parent bullet, to add links to all the pages created beneath it
-Write-Roam-File $csvImportNamePath ($indentType + $bulletType + "ATTRIBUTES") #Will create links to each attribute created under this bullet
+if($bPages)
+{
+    Write-Roam-File $csvImportNamePath ($bulletType + "SUMMARY") #Creating "SUMMARY" parent bullet, to add links to all the pages created beneath it
+    Write-Roam-File $csvImportNamePath ($indentType + $bulletType + "ATTRIBUTES") #Will create links to each attribute created under this bullet
+}
 $ctr = 2
 foreach($col in $csvObject[0].psobject.properties.name)
 {
@@ -193,26 +196,31 @@ foreach($col in $csvObject[0].psobject.properties.name)
     $ctr = $ctr + 1
     
     #If creating new pages for each CSV row, then need to add attributes to the summary page
-    if($bPages)
-    {
-        Write-Roam-File $csvImportNamePath ($indentType + $indentType + $bulletType + "[[" + $col + "]]")
-    }
+    if($bPages){Write-Roam-File $csvImportNamePath ($indentType + $indentType + $bulletType + "[[" + $col + "]]")}
 }
 
-#TESTING... Exit the script
-Read-Host -Prompt "Script complete. Press any key to exit."
-Exit
+#Create new page/file for each CSV row
+if($bPages){Write-Roam-File $csvImportNamePath ($indentType + $bulletType + "CSV ROW PAGES")} #Will create links to each page created under this bullet}
 
 #Loop through each row of the csv file
 foreach($row in $csvObject)
 {
+    #Create new page/file for each CSV row
+    if($bPages)
+    {
+        $colHeaderNames = $row.psobject.properties.name
+        $rowPageName = $row.($colHeaderNames[0])
+        Write-Roam-File $csvImportNamePath ($indentType + $indentType + $bulletType + "[[" + $rowPageName + "]]")
+        $rowPageNamePath = "$resultsFolder\" + "$rowPageName" + ".md"
+    }
     #Set a counter which will decide how spacing is done for indents in the Roam table structure
     #Start at 2 instead of 0 to account for CSV file name parent bullet and then {{table}} being second indent level, and everything needing to start indented under it
     $ctr = 2
     #For each row of csv file, loop through each column
     foreach($col in $row.psobject.properties.name)
     {
-        $tableCell = $row.$col
+        $tableCellOrig = $row.$col
+        $tableCell = $tableCellOrig
         $tableCell = $bulletType + $tableCell
         #Add the proper indentation based on looping through x number of times based on $ctr
         $tmpCtr = $ctr
@@ -224,17 +232,21 @@ foreach($row in $csvObject)
 
         Add-content -LiteralPath $newMarkdownFile -value $tableCell
         $ctr = $ctr + 1
+        
+        #Add attribute for the new page (row)
+        if($bPages){Write-Roam-File $rowPageNamePath ($col + ":: " + $tableCellOrig)}
     }
 }
 
-
-#Write-Roam-File $csvImportNamePath ("SUMMARY") #Creating "SUMMARY" parent bullet, to add links to all the pages created beneath it
-#Write-Roam-File $csvImportNamePath ($indentType + "[[" + $csvFileName + "]]")
-
+#Add the temp log file to the csv-import summary page under a parent bullet named "LOGS"
 
 #Delete the temp log file
-Remove-Item -LiteralPath $tempLogFile
+#Remove-Item -LiteralPath $tempLogFile
 
 #Exit the script
+Read-Host -Prompt "Script complete. Press any key to exit."
+Exit
+
+#TESTING... Exit the script
 Read-Host -Prompt "Script complete. Press any key to exit."
 Exit
