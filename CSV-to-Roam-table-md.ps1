@@ -1,5 +1,5 @@
 #v0.2.2
-#Version Comments: Starting creation of page names for each CSV table row
+#Version Comments: Created a summary page for the CSV Import/Conversion
 #Repository: https://github.com/GitMurf/csv-to-roam-table-md
 #Code written by:       Murf
 #Design/Concept by:     Rob Haisfield @RobertHaisfield on Twitter
@@ -16,6 +16,33 @@ $bulletType = "-"
 #Set the delimiter variable (default is "," comma)
 $strDelim = ","
 
+#This function writes to a specified file with specified text
+Function Write-Roam-File
+{
+    Param(
+        [string]$filePath,
+        [string]$strToWrite = ""
+    )
+
+    Add-content -LiteralPath $filePath -value $strToWrite
+    $logInfo = "Added '$strToWrite' to the File: '$filePath'"
+    Write-Roam-Log $logInfo
+}
+
+#This function writes to log file and echos on screen if "show" parameter is present
+Function Write-Roam-Log
+{
+    Param(
+        [string]$logstring,
+        [string]$show = "Hide"
+    )
+
+    #If passed the show parameter then write to the powershell window
+    if($show.ToLower() -eq "show"){Write-Host($logstring)}
+    if($logstring){$logstring = ("[" + (Get-Date) + "] $logstring")}
+    Add-content -LiteralPath $tempLogFile -value $logstring
+}
+
 #Add a blank line for easier reading of prompts in powershell window
 Write-Host
 
@@ -28,7 +55,7 @@ if($respPages -eq "y" -or $respPages -eq "Y" -or $respPages -eq "yes" -or $respP
     $bPages = $true
     Write-Host
     #Ask user for the type of csv import (e.g., People, Company, CRM etc.)
-    $csvType = Read-Host "Enter CSV Type (e.g., Contacts, Tools, Company). Will use as Attribute (csv-type:: Contacts)"
+    $csvType = Read-Host "Enter CSV Type (e.g., Contacts, Tools, Company). Will use in csv-type:: Attribute"
 }else{$bPages = $false}
 
 Write-Host
@@ -76,7 +103,11 @@ $resultsFolder = "$scriptPath\Results"
 $fullDateStr = get-date
 $dateStrName = $fullDateStr.ToString("yyyy_MM_dd-HH_mm_ss")
 $csvFileName = "$fileNameStr" + "_$dateStrName"
-$newMarkdownFile = "$resultsFolder\" + "csvFileName" + ".md"
+$newMarkdownFile = "$resultsFolder\" + "$csvFileName" + ".md"
+$tempLogFile = "$resultsFolder\" + "roamCsvLog" + "_$dateStrName" + ".log"
+
+#Import .CSV file into a Variable to loop through and parse
+$csvObject = Import-Csv -Delimiter $strDelim -Path "$fileNameStrPath"
 
 #If $bPages -eq $true, then create the csv-import page name to store all the info about this import and the pages it creates (summary and log)
 if($bPages)
@@ -102,20 +133,25 @@ if($bPages)
     $roamDate = "[[" + "$roamMonth $roamDay2, $roamYear" + "]]" #[[April 26th, 2020]]
     #Time string
     $strTime = $fullDateStr.ToString("HH:mm") #17:43, 05:21
+    
+    Write-Roam-Log "Created the .MD markdown file '$csvImportName' that will Summarize the CSV Conversion activities and store a Log of all actions."
+    Write-Roam-Log "Converted today's date to Roam format: $roamDate"
 
     #Write attribute for csv-import to first line of this new .md file (need to use LiteralPath parameter because of [[]] characters in path)
-    Add-content -LiteralPath $csvImportNamePath -value ("csv-date:: " + $roamDate)
+    Write-Roam-File $csvImportNamePath ("csv-date:: " + $roamDate)
     #Import time attribute
-    Add-content -LiteralPath $csvImportNamePath -value ("csv-time:: " + $strTime)
+    Write-Roam-File $csvImportNamePath ("csv-time:: " + $strTime)
     #Filename attribute
-    Add-content -LiteralPath $csvImportNamePath -value ("csv-filename:: " + $fileNameStr)
+    Write-Roam-File $csvImportNamePath ("csv-filename:: " + $fileNameStr)
     #Type of CSV file attribute (example could be: People, CRM, Company)
-    Add-content -LiteralPath $csvImportNamePath -value ("csv-type:: " + $csvType)
+    Write-Roam-File $csvImportNamePath ("csv-type:: " + $csvType)
+    
+    Write-Roam-Log "Finished adding primary Attributes to the CSV Conversion Summary page: '$csvImportName'"
 }
+
+#TESTING... Exit the script
 Read-Host -Prompt "Script complete. Press any key to exit."
 Exit
-#Import .CSV file into a Variable to loop through and parse
-$csvObject = Import-Csv -Delimiter $strDelim -Path "$fileNameStrPath"
 
 #Collapse the entire table under a parent bullet with name of the CSV file
 $tableCell = "TABLE IMPORT FROM CSV: " + $fileNameStr
