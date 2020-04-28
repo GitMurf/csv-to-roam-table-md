@@ -12,6 +12,10 @@ $arrSummary = @()
 $arrTable = @()
 $arrLog = @()
 
+#Page counter
+$pgCtr = 0
+$attrCtr = 0
+
 #Root bullets to nest results below under
 $arrSummary += , ($bulletType + "SUMMARY") #Collapse page and attribute names created under this main bullet
 $arrTable += , ($bulletType + "TABLE") #Collapse the entire table under a parent bullet for Table
@@ -152,6 +156,7 @@ $strTime = $fullDateStr.ToString("HH:mm") #17:43, 05:21
 $arrLog += , ($indentType + $bulletType + "Created the .MD markdown file '$csvImportName' that will Summarize the CSV Conversion activities and store a Log of all actions.")
 $arrLog += , ($indentType + $bulletType + "Converted today's date to Roam format: $roamDate")
 
+$pgCtr = $pgCtr + 1
 #Write attribute for csv-import to first line of this new .md file (need to use LiteralPath parameter because of [[]] characters in path)
 Write-Roam-File $csvImportNamePath ("csv-date:: " + $roamDate)
 #Import time attribute
@@ -199,6 +204,7 @@ foreach($col in $csvObject[0].psobject.properties.name)
     {
         if($bTesting){$col = "TESTING_" + $col}
         $arrSummary += , ($indentType + $indentType + $bulletType + "#[[" + $col + "]]")
+        $attrCtr = $attrCtr + 1
     }
 }
 
@@ -220,6 +226,7 @@ foreach($row in $csvObject)
         if($bTesting){$rowPageName = "TESTING_" + $rowPageName}
         $arrSummary += , ($indentType + $indentType + $bulletType + "[[" + $rowPageName + "]]")
         $rowPageNamePath = "$resultsFolder\" + "$rowPageName" + ".md"
+        $pgCtr = $pgCtr + 1
 
         #Commenting out the CSV import attribute data becuase isn't needed on each page... instead link to the csv summary page which has all that info
         #Check if any of the Windows filename illegal characters are present and if so, do NOT write to the file and instead just store the attributes on the summary page
@@ -291,6 +298,7 @@ foreach($row in $csvObject)
     }
 }
 
+Write-Roam-File $csvImportNamePath "CSV Conversion Script created **$pgCtr Pages** and **$attrCtr Attributes**"
 $arrLog += , ($indentType + $bulletType + "Merge the Summary into $csvImportName")
 
 #Add Summary array to CSV-Import summary markdown file
