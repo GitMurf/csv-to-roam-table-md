@@ -1,5 +1,5 @@
-#v0.3.1
-#Version Comments: Grab a CSV in the current folder to see if that is one you want
+#v0.3.2
+#Version Comments: Fixed bullet import markdown issue by adding space after each bullet
 #Repository: https://github.com/GitMurf/csv-to-roam-table-md
 #Code written by:       Murf
 #Design/Concept by:     Rob Haisfield @RobertHaisfield on Twitter
@@ -27,8 +27,9 @@ $arrLog += , ($bulletType + "LOGS") #Creating "LOGS" parent bullet to have all l
 $indentType = " "
 
 #Bullet type. Leave blank if don't need to show a character for bullets which Roam does NOT need to import into table format
-#Can use for example "*" or "-"
-$bulletType = "-"
+#Can use for example "* " or "- " or ""
+#NOTE: Whatever bullet type you use (other than if you use non and leave it empty) you NEED to add a space after it
+$bulletType = "- "
 
 #Set the delimiter variable (default is "," comma)
 $strDelim = ","
