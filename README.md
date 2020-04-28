@@ -8,7 +8,7 @@ Very early stages. Script is working great but non-windows folks have to figure 
 
 ## Quick GIF Demo
 
-https://user-images.githubusercontent.com/64155612/80481042-90c72200-8906-11ea-96cd-0f5c7dd7a2ba.gif
+![](https://user-images.githubusercontent.com/64155612/80481042-90c72200-8906-11ea-96cd-0f5c7dd7a2ba.gif)
 
 ## New Demo with CRM type import working
 
