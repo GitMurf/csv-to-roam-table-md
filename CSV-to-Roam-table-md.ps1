@@ -198,7 +198,7 @@ foreach($col in $csvObject[0].psobject.properties.name)
     if($bPages)
     {
         if($bTesting){$col = "TESTING_" + $col}
-        $arrSummary += , ($indentType + $indentType + $bulletType + "[[" + $col + "]]")
+        $arrSummary += , ($indentType + $indentType + $bulletType + "#[[" + $col + "]]")
     }
 }
 
