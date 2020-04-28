@@ -195,7 +195,7 @@ foreach($col in $csvObject[0].psobject.properties.name)
     $ctr = $ctr + 1
 
     #If creating new pages for each CSV row, then need to add attributes to the summary page
-    if($bPages)
+    if($bPages -and $ctr -gt 3) #Need to skip the first column because that is what you are creating pages from
     {
         if($bTesting){$col = "TESTING_" + $col}
         $arrSummary += , ($indentType + $indentType + $bulletType + "#[[" + $col + "]]")
@@ -231,6 +231,7 @@ foreach($row in $csvObject)
             $bInvalidChar = $true
             $arrLog += , ($indentType + $bulletType + "**Invalid character** for Windows found in Filename for PAGE: [[" + $rowPageName + "]]")
         }
+        else{$arrLog += , ($indentType + $bulletType + "Created the Page: [[" + $rowPageName + "]]")}
 
         if($bInvalidChar)
         {
@@ -273,7 +274,7 @@ foreach($row in $csvObject)
         $arrTable += , $tableCell
         $ctr = $ctr + 1
 
-        if($bPages)
+        if($bPages -and $ctr -gt 3) #Need to skip the first column because that is what you are creating pages from
         {
             #Add attribute for the new page (row)
             if($bTesting){$col = "TESTING_" + $col}
