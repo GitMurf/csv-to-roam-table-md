@@ -6,6 +6,10 @@ Very early stages. Script is working great but non-windows folks have to figure 
 
 ---
 
+## New Demo with CRM type import working
+
+https://www.screencast.com/t/xEq45WGWkl
+
 ## Brief Video Demo
 
 https://www.screencast.com/t/ak2DEaml2HYK
