@@ -1,5 +1,5 @@
 #v0.3.1
-#Version Comments: Used arrays instead of writing to temp files, fixed windows invalid file name issue
+#Version Comments: Grab a CSV in the current folder to see if that is one you want
 #Repository: https://github.com/GitMurf/csv-to-roam-table-md
 #Code written by:       Murf
 #Design/Concept by:     Rob Haisfield @RobertHaisfield on Twitter
@@ -76,24 +76,43 @@ Write-Host
 #Get path where script is running from so you can target CSV
 $scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
 
-#Ask for user input. If left blank and user presses ENTER, then use the script path. Otherwise they can enter their own custom path.
-$respPath = Read-Host "Is your target CSV file located here: '$scriptPath'? Press ENTER to Continue or input 'n' to change it."
+#Try to find the CSV to scan automatically by looking in current folder and also selecting one CSV file sorting by most recent edited
+$foundCsv = Get-ChildItem -Path $scriptPath -Filter *.csv | Sort-Object -Property LastWriteTime -Descending | Select-Object -first 1
+$foundName = $foundCsv.Name
 
-Write-Host
-
-#Check if user decided to change to a different path
-if($respPath -eq "n" -or $respPath -eq "N" -or $respPath -eq "'n'" -or $respPath -eq "'N'")
+if($foundPath -ne "")
 {
-    $scriptPath = Read-Host "Enter the folder path of your CSV file (do NOT include the file name)"
+    $respFound = Read-Host "Is this your target CSV: '$foundName'? Press ENTER to Continue or input 'n' to select a different CSV"
+    Write-Host
 }
 
-Write-Host
+if($respFound -ne "")
+{
+    #Ask for user input. If left blank and user presses ENTER, then use the script path. Otherwise they can enter their own custom path.
+    $respPath = Read-Host "Is your target CSV file located here: '$scriptPath'? Press ENTER to Continue or input 'n' to change it."
 
-#Get the file name from user and create the full path
-$fileNameStr = Read-Host "Name of CSV file with extension? Do NOT include path. Example: FileName.csv"
-$fileNameStrPath = $scriptPath + "\" + $fileNameStr
+    Write-Host
 
-Write-Host
+    #Check if user decided to change to a different path
+    if($respPath -eq "n" -or $respPath -eq "N" -or $respPath -eq "'n'" -or $respPath -eq "'N'")
+    {
+        $scriptPath = Read-Host "Enter the folder path of your CSV file (do NOT include the file name)"
+    }
+    Write-Host
+
+    #Get the file name from user and create the full path
+    $fileNameStr = Read-Host "Name of CSV file with extension? Do NOT include path. Example: FileName.csv"
+    $fileNameStrPath = $scriptPath + "\" + $fileNameStr
+    Write-Host
+}
+else
+{
+    #The CSV that was auto picked is the correct one (CSV in same folder as script)
+    #Get the file name and create the full path
+    $fileNameStr = $foundName
+    $fileNameStrPath = $foundCsv.FullName
+    Write-Host
+}
 
 #Set the Results folder to store all the outputs from the script
 $resultsFolder = "$scriptPath\Results"
