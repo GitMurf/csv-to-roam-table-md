@@ -39,7 +39,7 @@ Function Write-Roam-File
 
     Add-content -LiteralPath $filePath -value $strToWrite
     $logInfo = $indentType + $indentType + $bulletType + "Added '$strToWrite' to the File '$filePath'"
-    #$logInfo = $logInfo -Replace "\:","_" -Replace "\[","_" -Replace "\]","_"
+    $logInfo = $logInfo -Replace "\:","_" -Replace "\{","_" -Replace "\}","_"
     $script:arrLog += , $logInfo
 }
 
