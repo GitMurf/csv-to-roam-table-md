@@ -1,5 +1,5 @@
 #v0.3.2
-#Version Comments: Fixed bullet import markdown issue by adding space after each bullet
+#Version Comments: Attributes cannot have bullets
 #Repository: https://github.com/GitMurf/csv-to-roam-table-md
 #Code written by:       Murf
 #Design/Concept by:     Rob Haisfield @RobertHaisfield on Twitter
@@ -16,11 +16,6 @@ $arrLog = @()
 $pgCtr = 0
 $attrCtr = 0
 
-#Root bullets to nest results below under
-$arrSummary += , ($bulletType + "SUMMARY") #Collapse page and attribute names created under this main bullet
-$arrTable += , ($bulletType + "TABLE") #Collapse the entire table under a parent bullet for Table
-$arrLog += , ($bulletType + "LOGS") #Creating "LOGS" parent bullet to have all logs nested under it
-
 #Set the indent type. In Roam a single space at beginning of a line works just like a TAB.
 #Can use either way to bring into Roam, just your preference. Default we will keep simple and just use Spaces " ".
 #If you want to use tab, use $indentType = "`t"
@@ -29,10 +24,16 @@ $indentType = " "
 #Bullet type. Leave blank if don't need to show a character for bullets which Roam does NOT need to import into table format
 #Can use for example "* " or "- " or ""
 #NOTE: Whatever bullet type you use (other than if you use non and leave it empty) you NEED to add a space after it
+#NOTE: Attribute fields canNOT have bullets added in front so just leave without a bullet
 $bulletType = "- "
 
 #Set the delimiter variable (default is "," comma)
 $strDelim = ","
+
+#Root bullets to nest results below under
+$arrSummary += , ($bulletType + "SUMMARY") #Collapse page and attribute names created under this main bullet
+$arrTable += , ($bulletType + "TABLE") #Collapse the entire table under a parent bullet for Table
+$arrLog += , ($bulletType + "LOGS") #Creating "LOGS" parent bullet to have all logs nested under it
 
 #This function writes to a specified file with specified text
 Function Write-Roam-File
@@ -60,7 +61,7 @@ if($respPages -eq "y" -or $respPages -eq "Y" -or $respPages -eq "yes" -or $respP
 Write-Host
 
 #Ask user for the type of csv import (e.g., People, Company, CRM etc.)
-$csvType = Read-Host "Enter CSV Type (e.g., Contacts, Tools, Locations). Will use in csv-type:: Attribute"
+$csvType = Read-Host "Enter the Type/Category of your CSV data (e.g., Contacts, Books, Videos, etc.) to allow for searching of similar data types in Roam"
 
 Write-Host
 
@@ -244,7 +245,7 @@ foreach($row in $csvObject)
         if($bInvalidChar)
         {
             #Add under each page name in summary as this is what we will do if a bad character for Windows in file name
-            $arrSummary += , ($indentType + $indentType + $indentType + $bulletType + "csv-import:: [[" + $csvImportName + "]]")
+            $arrSummary += , ($indentType + $indentType + $indentType + "csv-import:: [[" + $csvImportName + "]]")
             #General attributes for the CSV import. These are in the Summary page for the import so do we need them also on every page?
             #$arrSummary += , ($indentType + $indentType + $indentType + $bulletType + "csv-date:: " + $roamDate)
             #$arrSummary += , ($indentType + $indentType + $indentType + $bulletType + "csv-time:: " + $strTime)
@@ -289,7 +290,7 @@ foreach($row in $csvObject)
             if($bInvalidChar)
             {
                 #Add under each page name in summary as this is what we will do if a bad character for Windows in file name
-                $arrSummary += , ($indentType + $indentType + $indentType + $bulletType + $col + ":: " + $tableCellOrig)
+                $arrSummary += , ($indentType + $indentType + $indentType + $col + ":: " + $tableCellOrig)
             }
             else
             {
@@ -299,7 +300,7 @@ foreach($row in $csvObject)
     }
 }
 
-Write-Roam-File $csvImportNamePath "CSV Conversion Script created **$pgCtr Pages** and **$attrCtr Attributes**"
+Write-Roam-File $csvImportNamePath ($bulletType + "CSV Conversion Script created **$pgCtr Pages** and **$attrCtr Attributes**")
 $arrLog += , ($indentType + $bulletType + "Merge the Summary into $csvImportName")
 
 #Add Summary array to CSV-Import summary markdown file
