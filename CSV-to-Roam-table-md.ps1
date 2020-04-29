@@ -1,5 +1,5 @@
 #v0.3.2
-#Version Comments: Attributes cannot have bullets
+#Version Comments: Attributes workaround adding space : : when not in root of page
 #Repository: https://github.com/GitMurf/csv-to-roam-table-md
 #Code written by:       Murf
 #Design/Concept by:     Rob Haisfield @RobertHaisfield on Twitter
@@ -23,8 +23,10 @@ $indentType = " "
 
 #Bullet type. Leave blank if don't need to show a character for bullets which Roam does NOT need to import into table format
 #Can use for example "* " or "- " or ""
-#NOTE: Whatever bullet type you use (other than if you use non and leave it empty) you NEED to add a space after it
-#NOTE: Attribute fields canNOT have bullets added in front so just leave without a bullet
+#NOTE: Whatever bullet type you use (other than if you use non and leave it empty) you should to add a space after it to match Roam export format
+#NOTE: As of april 28, 2020 there is a Roam bug that creates issues with adding Attributes:: if not at Root level of page
+    #To workaround this bug, will leave a space between the double colon "attr: : item" so it doesnt get imported as attribute and you just have to remove the space
+#NOTE: Attribute fields canNOT have bullets added in front so just leave without a bullet... not sure if this has to do with Bug above or not
 $bulletType = "- "
 
 #Set the delimiter variable (default is "," comma)
@@ -245,7 +247,9 @@ foreach($row in $csvObject)
         if($bInvalidChar)
         {
             #Add under each page name in summary as this is what we will do if a bad character for Windows in file name
-            $arrSummary += , ($indentType + $indentType + $indentType + "csv-import:: [[" + $csvImportName + "]]")
+            #NOTE: As of april 28, 2020 there is a Roam bug that creates issues with adding Attributes:: if not at Root level of page
+                #To workaround this bug, will leave a space between the double colon so it doesnt get imported as attribute and you just have to remove the space
+            $arrSummary += , ($indentType + $indentType + $indentType + "csv-import: : [[" + $csvImportName + "]]")
             #General attributes for the CSV import. These are in the Summary page for the import so do we need them also on every page?
             #$arrSummary += , ($indentType + $indentType + $indentType + $bulletType + "csv-date:: " + $roamDate)
             #$arrSummary += , ($indentType + $indentType + $indentType + $bulletType + "csv-time:: " + $strTime)
@@ -290,7 +294,9 @@ foreach($row in $csvObject)
             if($bInvalidChar)
             {
                 #Add under each page name in summary as this is what we will do if a bad character for Windows in file name
-                $arrSummary += , ($indentType + $indentType + $indentType + $col + ":: " + $tableCellOrig)
+                #NOTE: As of april 28, 2020 there is a Roam bug that creates issues with adding Attributes:: if not at Root level of page
+                    #To workaround this bug, will leave a space between the double colon so it doesnt get imported as attribute and you just have to remove the space
+                $arrSummary += , ($indentType + $indentType + $indentType + $col + ": : " + $tableCellOrig)
             }
             else
             {
