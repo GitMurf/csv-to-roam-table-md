@@ -1,14 +1,12 @@
-#v0.4
-#Version Comments: Starting JSON work for KJV challenge
+#v0.4.1
+#Version Comments: Cleaning up from KJV challenge
 #Repository: https://github.com/GitMurf/csv-to-roam-table-md
 #Code written by:       Murf
 #Design/Concept by:     Rob Haisfield @RobertHaisfield on Twitter
+#Design/Concept by:     Eric  @RobertHaisfield on Twitter
 
 #If $bTesting = $true then add "TESTING_ to the front of any page created
 $bTesting = $false
-#For JSON testing
-$bJSON = $true
-$jsonString = "["
 
 #Array variables
 $arrSummary = @()
@@ -57,18 +55,45 @@ Function Write-Roam-File
 #Add a blank line for easier reading of prompts in powershell window
 Write-Host
 
-#Ask for user input to create pages for each row, otherwise will just default to creating a single markdown file with the table markdown for Roam
-$respPages = Read-Host "Do you want to create a Page for each Row in the CSV file? (Enter y or n)"
+#Exporting to JSON or Markdown (JSON is default as Markdown has limitations such as max 10 import at once and issues with Windows file name characters, attribute names etc.)
+$bJSON = $true
+$jsonString = "["
 
-#Check if user decided to create new pages (e.g., a CRM import)
-if($respPages -eq "y" -or $respPages -eq "Y" -or $respPages -eq "yes" -or $respPages -eq "Yes"){$bPages = $true}else{$bPages = $false}
+#Ask for user input on whether JSON or Markdown export
+$respExport = Read-Host "Export to JSON (j) or Markdown (m)? Recommend JSON as Markdown has a 10 page import limit. Enter 'j' or 'm'"
+
+#Check for JSON or Markdown
+if($respExport -eq "m" -or $respExport -eq "'m'" -or $respExport -eq "M" -or $respExport -eq "'M'"){$bJSON = $false}else{$bJSON = $true}
 
 Write-Host
 
-#Ask user for the type of csv import (e.g., People, Company, CRM etc.)
-$csvType = Read-Host "Enter the Type/Category of your CSV data (e.g., Contacts, Books, Videos, etc.) to allow for searching of similar data types in Roam"
+#Importing attributes vs blocks
+$bAttributes = $false
+
+#Ask for user input on whether have one CSV row per page and then many columns that will be attributes OR many rows because adding blocks of data to each page.
+$respPages = Read-Host "Are you adding attributes (one row per page with many columns) OR blocks of text (many rows per page, one 'Block' column)? (Enter 'a' for attributes, 'b' for blocks)"
+
+#Check if user is importing attributes or blocks
+if($respPages -eq "a" -or $respPages -eq "'a'" -or $respPages -eq "A" -or $respPages -eq "'A'"){$bAttributes = $true}else{$bAttributes = $false}
 
 Write-Host
+
+if($bAttributes)
+{
+    #Ask user for the type of csv import (e.g., People, Company, CRM etc.)
+    $csvType = Read-Host "Enter the Type/Category of your CSV data (e.g., Contacts, Books, Videos, etc.) to allow for searching of similar data types in Roam"
+
+    Write-Host
+}
+else
+{
+    if($bJSON -eq $false)
+    {
+        #Exit the script
+        Read-Host -Prompt "Press any key to exit. Currently it is not Recommended to Import a CSV with Blocks (vs Attributes) with Markdown output. Restart the script and select the JSON option."
+        Exit
+    }
+}
 
 #Ask for user input. If left blank and user presses ENTER, then continue with default (comma). Otherwise they can enter their own option.
 $respDelim = Read-Host "Default CSV Delimiter is '$strDelim' (comma). Press ENTER to Continue or input 'n' to change it."
@@ -143,8 +168,11 @@ $csvImportNamePath = "$resultsFolder\" + "$csvImportName" + ".md"
 #Create Results folder if it doesn't already exist
 if(!(Test-Path $resultsFolder)){New-Item -ItemType Directory -Force -Path $resultsFolder | Out-Null}
 
-#Create JSON file
-$jsonFilePath = "$resultsFolder\" + "$csvImportName" + ".json"
+if($bJSON)
+{
+    #Create JSON file
+    $jsonFilePath = "$resultsFolder\" + "$csvImportName" + ".json"
+}
 
 #Get current date and put into Roam format
 $roamMonth = $fullDateStr.ToString("MMMM") #April, August, January
@@ -189,10 +217,8 @@ $arrTable += , $tableCell
 
 #Start by adding the table header
 $arrLog += , ($indentType + $bulletType + "Adding table headers to $csvFileName")
-if($bPages)
-{
-    $arrSummary += , ($indentType + $bulletType + "ATTRIBUTES") #Will create links to each attribute created under this bullet
-}
+$arrSummary += , ($indentType + $bulletType + "ATTRIBUTES") #Will create links to each attribute created under this bullet
+
 $ctr = 2
 foreach($col in $csvObject[0].psobject.properties.name)
 {
@@ -209,8 +235,8 @@ foreach($col in $csvObject[0].psobject.properties.name)
     $arrTable += , $tableCell
     $ctr = $ctr + 1
 
-    #If creating new pages for each CSV row, then need to add attributes to the summary page
-    if($bPages -and $ctr -gt 3) #Need to skip the first column because that is what you are creating pages from
+    #Need to add attributes to the summary page
+    if($ctr -gt 3) #Need to skip the first column because that is what you are creating pages from
     {
         if($bTesting){$col = "TESTING_" + $col}
         $arrSummary += , ($indentType + $indentType + $bulletType + "#[[" + $col + "]]")
@@ -218,12 +244,19 @@ foreach($col in $csvObject[0].psobject.properties.name)
     }
 }
 
-if($bPages)
+if($ctr -gt 4)
 {
-    #Create new page/file for each CSV row
-    $arrLog += , ($indentType + $bulletType + "Creating new Pages for each CSV row")
-    $arrSummary += , ($indentType + $bulletType + "PAGES CREATED")
+    if($bAttributes -eq $false)
+    {
+        #Exit the script
+        Read-Host -Prompt "Press any key to exit. You selected the 'Block' import as opposed to 'Attributes'. You can only have 2 columns with Block import (Page Name and Block). Please fix and restart the script."
+        Exit
+    }
 }
+
+#Create new page/file for each CSV row
+$arrLog += , ($indentType + $bulletType + "Creating new Pages for each CSV row")
+$arrSummary += , ($indentType + $bulletType + "PAGES CREATED")
 
 $rowCtr = 1
 $lastRowName = ""
@@ -232,66 +265,67 @@ foreach($row in $csvObject)
 {
     write-host "Row: $rowCtr"
     #Create new page/file for each CSV row
-    if($bPages)
+    $colHeaderNames = $row.psobject.properties.name
+    $rowPageName = $row.($colHeaderNames[0])
+    if($bTesting){$rowPageName = "TESTING_" + $rowPageName}
+
+    if($bJSON)
     {
-        $colHeaderNames = $row.psobject.properties.name
-        $rowPageName = $row.($colHeaderNames[0])
-        if($bTesting){$rowPageName = "TESTING_" + $rowPageName}
-
-        if($bJSON)
+        if($lastRowName -ne $rowPageName)
         {
-            if($lastRowName -eq $rowPageName)
+            if($bAttributes -eq $false -and $rowCtr -gt 1)
             {
-
+                $jsonString = $jsonString.substring(0,$jsonString.length - 1)
+                $jsonString = $jsonString + ']},'
             }
-            else
+            $jsonString = $jsonString + '{"title":"' + $rowPageName + '","children":['
+        }
+    }
+
+    #Dont add to the array if importing "blocks" as for big files like the Bible (31k blocks) it slows the script way down as the array grows
+    if($bAttributes){$arrSummary += , ($indentType + $indentType + $bulletType + "[[" + $rowPageName + "]]")}
+    $rowPageNamePath = "$resultsFolder\" + "$rowPageName" + ".md"
+    $pgCtr = $pgCtr + 1
+
+    #Commenting out the CSV import attribute data becuase isn't needed on each page... instead link to the csv summary page which has all that info
+    #Check if any of the Windows filename illegal characters are present and if so, do NOT write to the file and instead just store the attributes on the summary page
+        #Then the user can go into Summary page in Roam and copy the attributes, click the page name and then add there so that can keep the special character in name
+        #The characters not allowed are: \ / : * ? " < > |
+    $bInvalidChar = $false
+    if($bJSON -eq $false)
+    {
+        if($bAttributes)
+        {
+            if($rowPageName.Contains("\") -or $rowPageName.Contains("/") -or $rowPageName.Contains(":") -or $rowPageName.Contains("*") -or $rowPageName.Contains("?") -or $rowPageName.Contains('"') -or $rowPageName.Contains("<") -or $rowPageName.Contains(">") -or $rowPageName.Contains("|"))
             {
-                if($lastCol -eq "Block")
-                {
-                    $jsonString = $jsonString.substring(0,$jsonString.length - 1)
-                    $jsonString = $jsonString + ']},'
-                }
-                $jsonString = $jsonString + '{"title":"' + $rowPageName + '","children":['
+                $bInvalidChar = $true
+                $arrLog += , ($indentType + $bulletType + "**Invalid character** for Windows found in Filename for PAGE: [[" + $rowPageName + "]]")
             }
+            else{$arrLog += , ($indentType + $bulletType + "Created the Page: [[" + $rowPageName + "]]")}
         }
+    }
 
-        $arrSummary += , ($indentType + $indentType + $bulletType + "[[" + $rowPageName + "]]")
-        $rowPageNamePath = "$resultsFolder\" + "$rowPageName" + ".md"
-        $pgCtr = $pgCtr + 1
-
-        #Commenting out the CSV import attribute data becuase isn't needed on each page... instead link to the csv summary page which has all that info
-        #Check if any of the Windows filename illegal characters are present and if so, do NOT write to the file and instead just store the attributes on the summary page
-            #Then the user can go into Summary page in Roam and copy the attributes, click the page name and then add there so that can keep the special character in name
-            #The characters not allowed are: \ / : * ? " < > |
-        $bInvalidChar = $false
-        if($rowPageName.Contains("\") -or $rowPageName.Contains("/") -or $rowPageName.Contains(":") -or $rowPageName.Contains("*") -or $rowPageName.Contains("?") -or $rowPageName.Contains('"') -or $rowPageName.Contains("<") -or $rowPageName.Contains(">") -or $rowPageName.Contains("|"))
-        {
-            $bInvalidChar = $true
-            $arrLog += , ($indentType + $bulletType + "**Invalid character** for Windows found in Filename for PAGE: [[" + $rowPageName + "]]")
-        }
-        else{$arrLog += , ($indentType + $bulletType + "Created the Page: [[" + $rowPageName + "]]")}
-
-        if($bInvalidChar)
-        {
-            #Add under each page name in summary as this is what we will do if a bad character for Windows in file name
-            #NOTE: As of april 28, 2020 there is a Roam bug that creates issues with adding Attributes:: if not at Root level of page
-                #To workaround this bug, will leave a space between the double colon so it doesnt get imported as attribute and you just have to remove the space
-            $arrSummary += , ($indentType + $indentType + $indentType + "csv-import: : [[" + $csvImportName + "]]")
-            #General attributes for the CSV import. These are in the Summary page for the import so do we need them also on every page?
-            #$arrSummary += , ($indentType + $indentType + $indentType + $bulletType + "csv-date:: " + $roamDate)
-            #$arrSummary += , ($indentType + $indentType + $indentType + $bulletType + "csv-time:: " + $strTime)
-            #$arrSummary += , ($indentType + $indentType + $indentType + $bulletType + "csv-filename:: " + $fileNameStr)
-            #$arrSummary += , ($indentType + $indentType + $indentType + $bulletType + "csv-type:: " + $csvType)
-        }
-        else
-        {
-            if($bJSON -ne $true){Write-Roam-File $rowPageNamePath ("csv-import:: [[" + $csvImportName + "]]")}
-            #General attributes for the CSV import. These are in the Summary page for the import so do we need them also on every page?
-            #Write-Roam-File $rowPageNamePath ("csv-date:: " + $roamDate)
-            #Write-Roam-File $rowPageNamePath ("csv-time:: " + $strTime)
-            #Write-Roam-File $rowPageNamePath ("csv-filename:: " + $fileNameStr)
-            #Write-Roam-File $rowPageNamePath ("csv-type:: " + $csvType)
-        }
+    if($bInvalidChar)
+    {
+        #Add under each page name in summary as this is what we will do if a bad character for Windows in file name
+        #NOTE: As of april 28, 2020 there is a Roam bug that creates issues with adding Attributes:: if not at Root level of page
+            #To workaround this bug, will leave a space between the double colon so it doesnt get imported as attribute and you just have to remove the space
+        #Dont add to the array if importing "blocks" as for big files like the Bible (31k blocks) it slows the script way down as the array grows
+        if($bAttributes){$arrSummary += , ($indentType + $indentType + $indentType + "csv-import: : [[" + $csvImportName + "]]")}
+        #General attributes for the CSV import. These are in the Summary page for the import so do we need them also on every page?
+        #$arrSummary += , ($indentType + $indentType + $indentType + $bulletType + "csv-date:: " + $roamDate)
+        #$arrSummary += , ($indentType + $indentType + $indentType + $bulletType + "csv-time:: " + $strTime)
+        #$arrSummary += , ($indentType + $indentType + $indentType + $bulletType + "csv-filename:: " + $fileNameStr)
+        #$arrSummary += , ($indentType + $indentType + $indentType + $bulletType + "csv-type:: " + $csvType)
+    }
+    else
+    {
+        if($bJSON -ne $true){Write-Roam-File $rowPageNamePath ("csv-import:: [[" + $csvImportName + "]]")}
+        #General attributes for the CSV import. These are in the Summary page for the import so do we need them also on every page?
+        #Write-Roam-File $rowPageNamePath ("csv-date:: " + $roamDate)
+        #Write-Roam-File $rowPageNamePath ("csv-time:: " + $strTime)
+        #Write-Roam-File $rowPageNamePath ("csv-filename:: " + $fileNameStr)
+        #Write-Roam-File $rowPageNamePath ("csv-type:: " + $csvType)
     }
 
     #Set a counter which will decide how spacing is done for indents in the Roam table structure
@@ -311,10 +345,10 @@ foreach($row in $csvObject)
             $tmpCtr = $tmpCtr - 1
         }
 
-        $arrTable += , $tableCell
+        if($bAttributes){$arrTable += , $tableCell}
         $ctr = $ctr + 1
 
-        if($bPages -and $ctr -gt 3) #Need to skip the first column because that is what you are creating pages from
+        if($ctr -gt 3) #Need to skip the first column because that is what you are creating pages from
         {
             #Add attribute for the new page (row)
             if($bTesting){$col = "TESTING_" + $col}
@@ -323,15 +357,18 @@ foreach($row in $csvObject)
                 #Add under each page name in summary as this is what we will do if a bad character for Windows in file name
                 #NOTE: As of april 28, 2020 there is a Roam bug that creates issues with adding Attributes:: if not at Root level of page
                     #To workaround this bug, will leave a space between the double colon so it doesnt get imported as attribute and you just have to remove the space
-                $arrSummary += , ($indentType + $indentType + $indentType + $col + ": : " + $tableCellOrig)
+                if($bAttributes){$arrSummary += , ($indentType + $indentType + $indentType + $col + ": : " + $tableCellOrig)}
             }
             else
             {
-                if($bJSON -ne $true){Write-Roam-File $rowPageNamePath ($col + ":: " + $tableCellOrig)}
-                if($bJSON)
+                if($bJSON -ne $true)
+                {
+                    Write-Roam-File $rowPageNamePath ($col + ":: " + $tableCellOrig)
+                }
+                else
                 {
                     $lastCol = $col
-                    if($col -eq "Block")
+                    if($bAttributes -eq $false)
                     {
                         $jsonString = $jsonString + '{"string":"' + $tableCellOrig + '"},'
                     }
@@ -346,11 +383,7 @@ foreach($row in $csvObject)
     #Account for the extra "," added in last children item
     if($bJSON)
     {
-        if($lastCol -eq "Block")
-        {
-
-        }
-        else
+        if($bAttributes)
         {
             $jsonString = $jsonString.substring(0,$jsonString.length - 1)
             $jsonString = $jsonString + ']},'
@@ -363,7 +396,8 @@ foreach($row in $csvObject)
 #Account for the extra "," added in last page title
 if($bJSON)
 {
-    if($lastCol -eq "Block")
+    #If importing block style CSV file then there is an extra set of [] that needs to be closed before the final ] closure
+    if($bAttributes -eq $false)
     {
         $jsonString = $jsonString.substring(0,$jsonString.length - 1)
         $jsonString = $jsonString + ']},'
