@@ -1,11 +1,14 @@
-#v0.3.2
-#Version Comments: Attributes workaround adding space : : when not in root of page
+#v0.4
+#Version Comments: Starting JSON work for KJV challenge
 #Repository: https://github.com/GitMurf/csv-to-roam-table-md
 #Code written by:       Murf
 #Design/Concept by:     Rob Haisfield @RobertHaisfield on Twitter
 
 #If $bTesting = $true then add "TESTING_ to the front of any page created
-$bTesting = $true
+$bTesting = $false
+#For JSON testing
+$bJSON = $true
+$jsonString = "["
 
 #Array variables
 $arrSummary = @()
@@ -140,6 +143,9 @@ $csvImportNamePath = "$resultsFolder\" + "$csvImportName" + ".md"
 #Create Results folder if it doesn't already exist
 if(!(Test-Path $resultsFolder)){New-Item -ItemType Directory -Force -Path $resultsFolder | Out-Null}
 
+#Create JSON file
+$jsonFilePath = "$resultsFolder\" + "$csvImportName" + ".json"
+
 #Get current date and put into Roam format
 $roamMonth = $fullDateStr.ToString("MMMM") #April, August, January
 $roamDay1 = $fullDateStr.ToString("%d") #1, 13, 28
@@ -219,15 +225,36 @@ if($bPages)
     $arrSummary += , ($indentType + $bulletType + "PAGES CREATED")
 }
 
+$rowCtr = 1
+$lastRowName = ""
 #Loop through each row of the csv file
 foreach($row in $csvObject)
 {
+    write-host "Row: $rowCtr"
     #Create new page/file for each CSV row
     if($bPages)
     {
         $colHeaderNames = $row.psobject.properties.name
         $rowPageName = $row.($colHeaderNames[0])
         if($bTesting){$rowPageName = "TESTING_" + $rowPageName}
+
+        if($bJSON)
+        {
+            if($lastRowName -eq $rowPageName)
+            {
+
+            }
+            else
+            {
+                if($lastCol -eq "Block")
+                {
+                    $jsonString = $jsonString.substring(0,$jsonString.length - 1)
+                    $jsonString = $jsonString + ']},'
+                }
+                $jsonString = $jsonString + '{"title":"' + $rowPageName + '","children":['
+            }
+        }
+
         $arrSummary += , ($indentType + $indentType + $bulletType + "[[" + $rowPageName + "]]")
         $rowPageNamePath = "$resultsFolder\" + "$rowPageName" + ".md"
         $pgCtr = $pgCtr + 1
@@ -258,7 +285,7 @@ foreach($row in $csvObject)
         }
         else
         {
-            Write-Roam-File $rowPageNamePath ("csv-import:: [[" + $csvImportName + "]]")
+            if($bJSON -ne $true){Write-Roam-File $rowPageNamePath ("csv-import:: [[" + $csvImportName + "]]")}
             #General attributes for the CSV import. These are in the Summary page for the import so do we need them also on every page?
             #Write-Roam-File $rowPageNamePath ("csv-date:: " + $roamDate)
             #Write-Roam-File $rowPageNamePath ("csv-time:: " + $strTime)
@@ -300,35 +327,77 @@ foreach($row in $csvObject)
             }
             else
             {
-                Write-Roam-File $rowPageNamePath ($col + ":: " + $tableCellOrig)
+                if($bJSON -ne $true){Write-Roam-File $rowPageNamePath ($col + ":: " + $tableCellOrig)}
+                if($bJSON)
+                {
+                    $lastCol = $col
+                    if($col -eq "Block")
+                    {
+                        $jsonString = $jsonString + '{"string":"' + $tableCellOrig + '"},'
+                    }
+                    else
+                    {
+                        $jsonString = $jsonString + '{"string":"' + $col + ':: ' + $tableCellOrig + '"},'
+                    }
+                }
             }
         }
     }
+    #Account for the extra "," added in last children item
+    if($bJSON)
+    {
+        if($lastCol -eq "Block")
+        {
+
+        }
+        else
+        {
+            $jsonString = $jsonString.substring(0,$jsonString.length - 1)
+            $jsonString = $jsonString + ']},'
+        }
+    }
+    $lastRowName = $rowPageName
+    $rowCtr = $rowCtr + 1
 }
 
-Write-Roam-File $csvImportNamePath ($bulletType + "CSV Conversion Script created **$pgCtr Pages** and **$attrCtr Attributes**")
-$arrLog += , ($indentType + $bulletType + "Merge the Summary into $csvImportName")
-
-#Add Summary array to CSV-Import summary markdown file
-Foreach($summRow in $arrSummary)
+#Account for the extra "," added in last page title
+if($bJSON)
 {
-    Write-Roam-File $csvImportNamePath $summRow
+    if($lastCol -eq "Block")
+    {
+        $jsonString = $jsonString.substring(0,$jsonString.length - 1)
+        $jsonString = $jsonString + ']},'
+    }
+    $jsonString = $jsonString.substring(0,$jsonString.length - 1)
+    $jsonString = $jsonString + ']'
+    Write-Roam-File $jsonFilePath $jsonString
 }
-
-$arrLog += , ($indentType + $bulletType + "Merge the Roam table markdown format into $csvImportName")
-
-#Add the Roam table markdown format code from array to CSV-Import summary markdown file
-Foreach($tableRow in $arrTable)
+else
 {
-    Write-Roam-File $csvImportNamePath $tableRow
-}
+    Write-Roam-File $csvImportNamePath ($bulletType + "CSV Conversion Script created **$pgCtr Pages** and **$attrCtr Attributes**")
+    $arrLog += , ($indentType + $bulletType + "Merge the Summary into $csvImportName")
 
-$arrLog += , ($indentType + $bulletType + "Merge the Logs from this CSV conversion/import into $csvImportName")
+    #Add Summary array to CSV-Import summary markdown file
+    Foreach($summRow in $arrSummary)
+    {
+        Write-Roam-File $csvImportNamePath $summRow
+    }
 
-#Add the log array values to CSV-Import summary markdown file
-Foreach($logRow in $arrLog)
-{
-    Write-Roam-File $csvImportNamePath $logRow
+    $arrLog += , ($indentType + $bulletType + "Merge the Roam table markdown format into $csvImportName")
+
+    #Add the Roam table markdown format code from array to CSV-Import summary markdown file
+    Foreach($tableRow in $arrTable)
+    {
+        Write-Roam-File $csvImportNamePath $tableRow
+    }
+
+    $arrLog += , ($indentType + $bulletType + "Merge the Logs from this CSV conversion/import into $csvImportName")
+
+    #Add the log array values to CSV-Import summary markdown file
+    Foreach($logRow in $arrLog)
+    {
+        Write-Roam-File $csvImportNamePath $logRow
+    }
 }
 
 #Exit the script
