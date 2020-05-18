@@ -1,3 +1,7 @@
+# IMPORTANT as of May 17, 2020 the Instructions and information below do NOT reflect the updated capabilities of this tool with regards to the JSON conversion which was used to Import the KJV Bible into Roam.
+
+The Roam-csv-importer.ps1 script file is all you need. The script itself has some prompts that make it pretty self explanatory and if you select the wrong option it will tell/warn you. So until I update this Readme feel free to play around with it. Also checkout the Resources folder for some examples and all the source data / results used in the KJV import.
+
 # Converting CSV files to Markdown for Roam Tables
 
 Very early stages. Script is working great but non-windows folks have to figure out how to run PowerShell on their computer.
