@@ -80,10 +80,12 @@ Function Loop-Block
 $csvString = '"' + "PageName" + '","' + "BlockUID" + '","' + "BlockDepth" + '","' + "BlockString" + '","' + "Hierarchy" + '"'
 Write-To-Result $csvString
 
+$pageCtr = 1
 #Loop through every Roam Page Name
 foreach($pageObj in $jsonObj)
 {
     $pageName = $pageObj.title
+    write-host $pageCtr
     #Loop through every block on each page
     foreach($pageBlock in $pageObj.children)
     {
@@ -96,7 +98,7 @@ foreach($pageObj in $jsonObj)
         Write-To-Result $csvString
         Loop-Block $pageBlock $hierarchyStr $pageName $blockDepth
     }
-    break
+    $pageCtr++
 }
 
 $csvResultStream.Close()
