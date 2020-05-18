@@ -130,7 +130,7 @@ $scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
 $foundCsv = Get-ChildItem -Path $scriptPath -Filter *.csv | Sort-Object -Property LastWriteTime -Descending | Select-Object -first 1
 $foundName = $foundCsv.Name
 
-if($foundPath -ne "")
+if($foundName -ne "")
 {
     $respFound = Read-Host "Is this your target CSV: '$foundName'? Press ENTER to Continue or input 'n' to select a different CSV"
     Write-Host
