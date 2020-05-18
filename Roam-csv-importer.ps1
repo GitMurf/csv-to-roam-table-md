@@ -1,9 +1,9 @@
-#v0.4.1
-#Version Comments: Cleaning up from KJV challenge
+#v0.5
+#Version Comments: Adding parent child bullet nesting
 #Repository: https://github.com/GitMurf/csv-to-roam-table-md
-#Code written by:       Murf
+#Code written by:       Murf @shawnpmurphy8 on Twitter
 #Design/Concept by:     Rob Haisfield @RobertHaisfield on Twitter
-#Design/Concept by:     Eric  @RobertHaisfield on Twitter
+#Design/Concept by:     EA @ec_anderson on Twitter
 
 #If $bTesting = $true then add "TESTING_ to the front of any page created
 $bTesting = $false
@@ -50,6 +50,20 @@ Function Write-Roam-File
     $logInfo = $indentType + $indentType + $bulletType + "Added '$strToWrite' to the File '$filePath'"
     $logInfo = $logInfo -Replace "\:","_" -Replace "\{","_" -Replace "\}","_"
     $script:arrLog += , $logInfo
+}
+
+#This function checks if trailing comma and then removes it
+Function Remove-Trailing-Comma
+{
+    Param(
+        [string]$tmpJason
+    )
+
+    if($tmpJason.substring($tmpJason.length-1) -eq ",")
+    {
+        $tmpJason = $tmpJason.substring(0,$tmpJason.length - 1) #Remove trailing comma
+    }
+    return $tmpJason
 }
 
 #Add a blank line for easier reading of prompts in powershell window
@@ -195,14 +209,18 @@ $arrLog += , ($indentType + $bulletType + "Created the .MD markdown file '$csvIm
 $arrLog += , ($indentType + $bulletType + "Converted today's date to Roam format: $roamDate")
 
 $pgCtr = $pgCtr + 1
-#Write attribute for csv-import to first line of this new .md file (need to use LiteralPath parameter because of [[]] characters in path)
-Write-Roam-File $csvImportNamePath ("csv-date:: " + $roamDate)
-#Import time attribute
-Write-Roam-File $csvImportNamePath ("csv-time:: " + $strTime)
-#Filename attribute
-Write-Roam-File $csvImportNamePath ("csv-filename:: " + $fileNameStr)
-#Type of CSV file attribute (example could be: People, CRM, Company)
-Write-Roam-File $csvImportNamePath ("csv-type:: " + $csvType)
+
+if($bAttributes)
+{
+    #Write attribute for csv-import to first line of this new .md file (need to use LiteralPath parameter because of [[]] characters in path)
+    Write-Roam-File $csvImportNamePath ("csv-date:: " + $roamDate)
+    #Import time attribute
+    Write-Roam-File $csvImportNamePath ("csv-time:: " + $strTime)
+    #Filename attribute
+    Write-Roam-File $csvImportNamePath ("csv-filename:: " + $fileNameStr)
+    #Type of CSV file attribute (example could be: People, CRM, Company)
+    Write-Roam-File $csvImportNamePath ("csv-type:: " + $csvType)
+}
 
 $arrLog += , ($indentType + $bulletType + "Finished adding primary Attributes to the CSV Conversion Summary page: '$csvImportName'")
 
@@ -246,7 +264,12 @@ foreach($col in $csvObject[0].psobject.properties.name)
 
 if($ctr -gt 4)
 {
-    if($bAttributes -eq $false)
+    $checkLastCol = $col
+    if($bTesting){$checkLastCol = $col.substring(8)}
+    $bNestedBlocks = $false
+    if($bAttributes -eq $false -and $checkLastCol -eq "Parent3"){$bNestedBlocks = $true}
+
+    if($bAttributes -eq $false -and $bNestedBlocks -ne $true)
     {
         #Exit the script
         Read-Host -Prompt "Press any key to exit. You selected the 'Block' import as opposed to 'Attributes'. You can only have 2 columns with Block import (Page Name and Block). Please fix and restart the script."
@@ -260,6 +283,11 @@ $arrSummary += , ($indentType + $bulletType + "PAGES CREATED")
 
 $rowCtr = 1
 $lastRowName = ""
+
+$lastPar1 = ""
+$lastPar2 = ""
+$lastPar3 = ""
+
 #Loop through each row of the csv file
 foreach($row in $csvObject)
 {
@@ -275,7 +303,14 @@ foreach($row in $csvObject)
         {
             if($bAttributes -eq $false -and $rowCtr -gt 1)
             {
-                $jsonString = $jsonString.substring(0,$jsonString.length - 1)
+                $jsonString = Remove-Trailing-Comma $jsonString #Remove trailing comma
+                #Close par3 if there previously was one
+                if($lastPar3 -ne ""){$jsonString = $jsonString + ']}'}
+                #Close par2 if there previously was one
+                if($lastPar2 -ne ""){$jsonString = $jsonString + ']}'}
+                #Close par1 if there previously was one
+                if($lastPar1 -ne ""){$jsonString = $jsonString + ']}'}
+                #Close title for previous page
                 $jsonString = $jsonString + ']},'
             }
             $jsonString = $jsonString + '{"title":"' + $rowPageName + '","children":['
@@ -332,22 +367,26 @@ foreach($row in $csvObject)
     #Start at 2 instead of 0 to account for CSV file name parent bullet and then {{table}} being second indent level, and everything needing to start indented under it
     $ctr = 2
     #For each row of csv file, loop through each column
-    foreach($col in $row.psobject.properties.name)
+    $listOfColumns = $row.psobject.properties.name
+    foreach($col in $listOfColumns)
     {
         $tableCellOrig = $row.$col
-        $tableCell = $tableCellOrig
-        $tableCell = $bulletType + $tableCell
-        #Add the proper indentation based on looping through x number of times based on $ctr
-        $tmpCtr = $ctr
-        while($tmpCtr -gt 0)
+        if($bAttributes)
         {
-            $tableCell = $indentType + $tableCell
-            $tmpCtr = $tmpCtr - 1
+            $tableCell = $tableCellOrig
+            $tableCell = $bulletType + $tableCell
+            #Add the proper indentation based on looping through x number of times based on $ctr
+            $tmpCtr = $ctr
+            while($tmpCtr -gt 0)
+            {
+                $tableCell = $indentType + $tableCell
+                $tmpCtr = $tmpCtr - 1
+            }
+
+            $arrTable += , $tableCell
         }
 
-        if($bAttributes){$arrTable += , $tableCell}
         $ctr = $ctr + 1
-
         if($ctr -gt 3) #Need to skip the first column because that is what you are creating pages from
         {
             #Add attribute for the new page (row)
@@ -367,10 +406,106 @@ foreach($row in $csvObject)
                 }
                 else
                 {
-                    $lastCol = $col
                     if($bAttributes -eq $false)
                     {
-                        $jsonString = $jsonString + '{"string":"' + $tableCellOrig + '"},'
+                        #For block import only need to look at the one column next to the page name column
+                        if($ctr -eq 4)
+                        {
+                            if($bNestedBlocks)
+                            {
+                                $par1 = $row.($listOfColumns[$ctr-2])
+                                $par2 = $row.($listOfColumns[$ctr-2+1])
+                                $par3 = $row.($listOfColumns[$ctr-2+2])
+
+                                if($lastRowName -ne $rowPageName) #New set of rows / page name section in CSV
+                                {
+                                    if($par1 -ne "")
+                                    {
+                                        $jsonString = $jsonString + '{"string":"' + $par1 + '","children":['
+                                        if($par2 -ne "")
+                                        {
+                                            $jsonString = $jsonString + '{"string":"' + $par2 + '","children":['
+                                            if($par3 -ne ""){$jsonString = $jsonString + '{"string":"' + $par3 + '","children":['}
+                                        }
+                                    }
+
+                                    $lastPar1 = $par1
+                                    $lastPar2 = $par2
+                                    $lastPar3 = $par3
+                                }
+
+                                #par1 changed which means changing all 3 parents
+                                if($par1 -ne $lastPar1)
+                                {
+                                    $jsonString = Remove-Trailing-Comma $jsonString #Remove trailing comma
+                                    #Close par3 if there previously was one
+                                    if($lastPar3 -ne ""){$jsonString = $jsonString + ']}'}
+                                    #Close par2 if there previously was one
+                                    if($lastPar2 -ne ""){$jsonString = $jsonString + ']}'}
+                                    #Close par1 if there previously was one
+                                    if($lastPar1 -ne ""){$jsonString = $jsonString + ']}'}
+
+                                    #If not blank then add new par1
+                                    if($par1 -ne "")
+                                    {
+                                        $jsonString = $jsonString + ',{"string":"' + $par1 + '","children":['
+                                        #If not blank then add new par2
+                                        if($par2 -ne "")
+                                        {
+                                            $jsonString = $jsonString + '{"string":"' + $par2 + '","children":['
+                                            #If not blank then add new par3
+                                            if($par3 -ne "")
+                                            {
+                                                $jsonString = $jsonString + '{"string":"' + $par3 + '","children":['
+                                            }
+                                            else{$jsonString = $jsonString + ','} #Have to add the trailing comma again
+                                        }
+                                        else{$jsonString = $jsonString + ','} #Have to add the trailing comma again
+                                    }
+                                    else{$jsonString = $jsonString + ','} #Have to add the trailing comma again
+                                }
+                                elseif($par2 -ne $lastPar2) #If par2 changed then change par2 and par3
+                                {
+                                    $jsonString = Remove-Trailing-Comma $jsonString #Remove trailing comma
+                                    #Close par3 if there previously was one
+                                    if($lastPar3 -ne ""){$jsonString = $jsonString + ']}'}
+                                    #Close par2 if there previously was one
+                                    if($lastPar2 -ne ""){$jsonString = $jsonString + ']}'}
+
+                                    #If not blank then add new par2
+                                    if($par2 -ne "")
+                                    {
+                                        $jsonString = $jsonString + ',{"string":"' + $par2 + '","children":['
+                                        #If not blank then add new par3
+                                        if($par3 -ne "")
+                                        {
+                                            $jsonString = $jsonString + '{"string":"' + $par3 + '","children":['
+                                        }
+                                        else{$jsonString = $jsonString + ','} #Have to add the trailing comma again
+                                    }
+                                    else{$jsonString = $jsonString + ','} #Have to add the trailing comma again
+                                }
+                                elseif($par3 -ne $lastPar3) #If only par3 changed
+                                {
+                                    $jsonString = Remove-Trailing-Comma $jsonString #Remove trailing comma
+                                    #Close par3 if there previously was one
+                                    if($lastPar3 -ne ""){$jsonString = $jsonString + ']}'}
+
+                                    #If not blank then add new par3
+                                    if($par3 -ne "")
+                                    {
+                                        $jsonString = $jsonString + ',{"string":"' + $par3 + '","children":['
+                                    }
+                                    else{$jsonString = $jsonString + ','} #Have to add the trailing comma again
+                                }
+
+                                $lastPar1 = $par1
+                                $lastPar2 = $par2
+                                $lastPar3 = $par3
+                            }
+
+                            $jsonString = $jsonString + '{"string":"' + $tableCellOrig + '"},'
+                        }
                     }
                     else
                     {
@@ -385,7 +520,7 @@ foreach($row in $csvObject)
     {
         if($bAttributes)
         {
-            $jsonString = $jsonString.substring(0,$jsonString.length - 1)
+            $jsonString = Remove-Trailing-Comma $jsonString #Remove trailing comma
             $jsonString = $jsonString + ']},'
         }
     }
@@ -393,16 +528,23 @@ foreach($row in $csvObject)
     $rowCtr = $rowCtr + 1
 }
 
-#Account for the extra "," added in last page title
+#Close out the final children and title ]}
 if($bJSON)
 {
     #If importing block style CSV file then there is an extra set of [] that needs to be closed before the final ] closure
     if($bAttributes -eq $false)
     {
-        $jsonString = $jsonString.substring(0,$jsonString.length - 1)
+        $jsonString = Remove-Trailing-Comma $jsonString #Remove trailing comma
+        #Close par3 if there previously was one
+        if($lastPar3 -ne ""){$jsonString = $jsonString + ']}'}
+        #Close par2 if there previously was one
+        if($lastPar2 -ne ""){$jsonString = $jsonString + ']}'}
+        #Close par1 if there previously was one
+        if($lastPar1 -ne ""){$jsonString = $jsonString + ']}'}
+        #Close title for previous page
         $jsonString = $jsonString + ']},'
     }
-    $jsonString = $jsonString.substring(0,$jsonString.length - 1)
+    $jsonString = Remove-Trailing-Comma $jsonString #Remove trailing comma
     $jsonString = $jsonString + ']'
     Write-Roam-File $jsonFilePath $jsonString
 }
