@@ -35,6 +35,16 @@ if(!(Test-Path $resultsFolder)){New-Item -ItemType Directory -Force -Path $resul
 #$true on end for append instead of overwrite
 $csvResultStream = New-Object System.IO.StreamWriter -ArgumentList "$jsonResultCsv",$true
 
+#Clean stuff out like '"' quotes that have to be escaped with 2 of them
+function Clean-String($InputString)
+{
+    if($InputString -eq ""){return $InputString}
+
+    #Replace special characters like line breaks and tabs
+    $InputString = $InputString -Replace '"','""' -Replace "`t","\t" -Replace "`r","\r" -Replace "`n","\n"
+    return $InputString
+}
+
 Function Write-To-Result
 {
     Param(
@@ -49,20 +59,26 @@ Function Loop-Block
     Param(
         [object]$pgBlock,
         [string]$hierStr,
-        [string]$pgName
+        [string]$pgName,
+        [int]$blDepth
     )
 
     foreach($childBlock in $pgBlock.children)
     {
+        $newBlDepth = $blDepth + 1
         $blockStr = $childBlock.string
         $blockUID = $childBlock.uid
         $strResult = "$blockUID : $blockStr"
         $newHierStr = $hierStr + ' > ' + $strResult
-        $csvString = '"' + $pgName + '","' + $blockUID + '","' + $blockStr + '","' + $newHierStr + '"'
+        $csvString = '"' + (Clean-String $pgName) + '","' + (Clean-String $blockUID) + '","' + $newBlDepth + '","' + (Clean-String $blockStr) + '","' + (Clean-String $newHierStr) + '"'
         Write-To-Result $csvString
-        Loop-Block $childBlock $newHierStr $pgName
+        Loop-Block $childBlock $newHierStr $pgName $newBlDepth
     }
 }
+
+#Creater header row for columns
+$csvString = '"' + "PageName" + '","' + "BlockUID" + '","' + "BlockDepth" + '","' + "BlockString" + '","' + "Hierarchy" + '"'
+Write-To-Result $csvString
 
 #Loop through every Roam Page Name
 foreach($pageObj in $jsonObj)
@@ -71,13 +87,14 @@ foreach($pageObj in $jsonObj)
     #Loop through every block on each page
     foreach($pageBlock in $pageObj.children)
     {
+        $blockDepth = 0
         $blockStr = $pageBlock.string
         $blockUID = $pageBlock.uid
         $strResult = "$blockUID : $blockStr"
         $hierarchyStr = $pageName + ' > ' + $strResult
-        $csvString = '"' + $pageName + '","' + $blockUID + '","' + $blockStr + '","' + $hierarchyStr + '"'
+        $csvString = '"' + (Clean-String $pageName) + '","' + (Clean-String $blockUID) + '","' + $blockDepth + '","' + (Clean-String $blockStr) + '","' + (Clean-String $hierarchyStr) + '"'
         Write-To-Result $csvString
-        Loop-Block $pageBlock $hierarchyStr $pageName
+        Loop-Block $pageBlock $hierarchyStr $pageName $blockDepth
     }
     break
 }

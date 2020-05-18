@@ -317,7 +317,8 @@ foreach($row in $csvObject)
                 #Close title for previous page
                 $jsonString = $jsonString + ']},'
             }
-            $jsonString = $jsonString + '{"title":"' + $rowPageName + '","children":['
+            $tmpStringAdd = $rowPageName -Replace '"','\"'
+            $jsonString = $jsonString + '{"title":"' + $tmpStringAdd + '","children":['
         }
     }
 
@@ -425,11 +426,17 @@ foreach($row in $csvObject)
                                 {
                                     if($par1 -ne "")
                                     {
-                                        $jsonString = $jsonString + '{"string":"' + $par1 + '","children":['
+                                        $tmpStringAdd = $par1 -Replace '"','\"'
+                                        $jsonString = $jsonString + '{"string":"' + $tmpStringAdd + '","children":['
                                         if($par2 -ne "")
                                         {
-                                            $jsonString = $jsonString + '{"string":"' + $par2 + '","children":['
-                                            if($par3 -ne ""){$jsonString = $jsonString + '{"string":"' + $par3 + '","children":['}
+                                            $tmpStringAdd = $par2 -Replace '"','\"'
+                                            $jsonString = $jsonString + '{"string":"' + $tmpStringAdd + '","children":['
+                                            if($par3 -ne "")
+                                            {
+                                                $tmpStringAdd = $par3 -Replace '"','\"'
+                                                $jsonString = $jsonString + '{"string":"' + $tmpStringAdd + '","children":['
+                                            }
                                         }
                                     }
 
@@ -452,21 +459,30 @@ foreach($row in $csvObject)
                                     #If not blank then add new par1
                                     if($par1 -ne "")
                                     {
-                                        $jsonString = $jsonString + ',{"string":"' + $par1 + '","children":['
+                                        $tmpStringAdd = $par1 -Replace '"','\"'
+                                        $jsonString = $jsonString + ',{"string":"' + $tmpStringAdd + '","children":['
                                         #If not blank then add new par2
                                         if($par2 -ne "")
                                         {
-                                            $jsonString = $jsonString + '{"string":"' + $par2 + '","children":['
+                                            $tmpStringAdd = $par2 -Replace '"','\"'
+                                            $jsonString = $jsonString + '{"string":"' + $tmpStringAdd + '","children":['
                                             #If not blank then add new par3
                                             if($par3 -ne "")
                                             {
-                                                $jsonString = $jsonString + '{"string":"' + $par3 + '","children":['
+                                                $tmpStringAdd = $par3 -Replace '"','\"'
+                                                $jsonString = $jsonString + '{"string":"' + $tmpStringAdd + '","children":['
                                             }
-                                            else{$jsonString = $jsonString + ','} #Have to add the trailing comma again
+                                            else{
+                                                #$jsonString = $jsonString + ','
+                                                } #Have to add the trailing comma again
                                         }
-                                        else{$jsonString = $jsonString + ','} #Have to add the trailing comma again
+                                        else{
+                                            #$jsonString = $jsonString + ','
+                                            } #Have to add the trailing comma again
                                     }
-                                    else{$jsonString = $jsonString + ','} #Have to add the trailing comma again
+                                    else{
+                                        $jsonString = $jsonString + ','
+                                        } #Have to add the trailing comma again
                                 }
                                 elseif($par2 -ne $lastPar2) #If par2 changed then change par2 and par3
                                 {
@@ -479,13 +495,17 @@ foreach($row in $csvObject)
                                     #If not blank then add new par2
                                     if($par2 -ne "")
                                     {
-                                        $jsonString = $jsonString + ',{"string":"' + $par2 + '","children":['
+                                        $tmpStringAdd = $par2 -Replace '"','\"'
+                                        $jsonString = $jsonString + ',{"string":"' + $tmpStringAdd + '","children":['
                                         #If not blank then add new par3
                                         if($par3 -ne "")
                                         {
-                                            $jsonString = $jsonString + '{"string":"' + $par3 + '","children":['
+                                            $tmpStringAdd = $par3 -Replace '"','\"'
+                                            $jsonString = $jsonString + '{"string":"' + $tmpStringAdd + '","children":['
                                         }
-                                        else{$jsonString = $jsonString + ','} #Have to add the trailing comma again
+                                        else{
+                                            #$jsonString = $jsonString + ','
+                                            } #Have to add the trailing comma again
                                     }
                                     else{$jsonString = $jsonString + ','} #Have to add the trailing comma again
                                 }
@@ -498,7 +518,8 @@ foreach($row in $csvObject)
                                     #If not blank then add new par3
                                     if($par3 -ne "")
                                     {
-                                        $jsonString = $jsonString + ',{"string":"' + $par3 + '","children":['
+                                        $tmpStringAdd = $par3 -Replace '"','\"'
+                                        $jsonString = $jsonString + ',{"string":"' + $tmpStringAdd + '","children":['
                                     }
                                     else{$jsonString = $jsonString + ','} #Have to add the trailing comma again
                                 }
@@ -507,8 +528,8 @@ foreach($row in $csvObject)
                                 $lastPar2 = $par2
                                 $lastPar3 = $par3
                             }
-
-                            $jsonString = $jsonString + '{"string":"' + $tableCellOrig + '"},'
+                            $tmpStringAdd = $tableCellOrig -Replace '"','\"'
+                            $jsonString = $jsonString + '{"string":"' + $tmpStringAdd + '"},'
                         }
                     }
                     else
