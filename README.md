@@ -51,3 +51,9 @@ This is a brand new script and I haven't spent much time on it but wanted to get
 6. Open the resulting .md file and simply copy the entire file contents and then paste into any block in Roam and it should auto format/create the table.
 
 A lot more to come!
+
+# License
+
+[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://badges.mit-license.org)
+
+This project is licensed under the **MIT license** - see the [LICENSE](LICENSE) file for details
